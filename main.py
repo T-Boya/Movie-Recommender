@@ -9,12 +9,12 @@ model.similarity_fn_name = SimilarityFunction.EUCLIDEAN
 movies, actors, metrics = load_movie_data()
 
 # Print the first 5 movies in the database
-for movie in list(movies.values())[:1]:
-    print(f"Movie: {movie.title}")
-    for attribute, vector in movie.attribute_vectors.items():
-        if vector is not None:
-            print(f"Attribute: {attribute}, Vector: {vector}, Value: {movie.get_normalized_vector(attribute)}")
-    print("\n")
+# for movie in list(movies.values())[:1]:
+#     print(f"Movie: {movie.title}")
+#     for attribute, vector in movie.attribute_vectors.items():
+#         if vector is not None:
+#             print(f"Attribute: {attribute}, Vector: {vector}, Value: {movie.get_normalized_vector(attribute)}")
+#     print("\n")
 
 def calculate_distance(attribute,x,y):
     match attribute:
@@ -58,15 +58,18 @@ def calculate_distances(movie_id, movie_database):
             continue
         
         other_vectors = {key: other_movie.get_normalized_vector(key) for key in valid_keys if other_movie.attribute_vectors[key] is not None}
-        distance = 0
+        distance = np.array([])
         
         for key in target_vectors:
             if key in other_vectors:
                 # not all distances are created equal, have a vector of distances and weight distance by importance before summing
                 # importance is defined by attribute
-                distance += calculate_distance(key, target_vectors[key], other_vectors[key])
+                distance = np.append(distance, calculate_distance(key, target_vectors[key], other_vectors[key]))
         
-        distances[distance].append(other_movie.id)
+        # Calculate the absolute Euclidean distance
+        absolute_distance = np.sqrt(np.sum(np.square(distance)))
+
+        distances[absolute_distance].append(other_movie.id)
     
     return dict(distances)
 
