@@ -4,7 +4,7 @@ import random
 import numpy as np
 import copy
 
-from parse_utils import to_numpy_array
+from data.parse_utils import to_numpy_array
 
 class MovieMetrics:
     """
@@ -97,7 +97,7 @@ class Movie:
             'country': None,
             'language': None,
             'awards': None,
-            'imdb_rating': to_numpy_array(self.imdb_rating),
+            'imdb_rating': to_numpy_array(self.imdb_rating), # you don't want to fit to rating, you want to maximize it
             'imdb_votes': None,
             # 'imdb_id' is not a useful vector for recommendation
         }
@@ -127,16 +127,6 @@ class Movie:
             return np.array([self.vectorize(item) for item in attribute])
         else:
             return np.array([])
-        
-    def normalize_vectors(self, vectors):
-        """Normalize the vectors to unit length."""
-        for key, vector in vectors.items():
-            if isinstance(vector, np.ndarray):
-                # Scale the vector to unit length
-                norm = np.linalg.norm(vector)
-                if norm != 0:
-                    vectors[key] = vector / norm
-        return vectors
         
     def update_vector(self, key, value):
         """Update the vector for a specific attribute."""
