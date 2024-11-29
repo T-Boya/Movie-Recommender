@@ -1,5 +1,8 @@
 import numpy as np
 
+def isNoneType(value) -> bool:
+    """Check if the value is of NoneType or NaN."""
+    return value is None or (isinstance(value, float) and np.isnan(value))
 
 def parse_actors(actors: str) -> list:
     """Parse the actors string into a list of actors."""
@@ -7,9 +10,14 @@ def parse_actors(actors: str) -> list:
 
 def convert_to_type(value, target_type):
     try:
-        if value is None or np.isnan(value):
+        if isNoneType(value):
             return value
         return target_type(value)
     except (ValueError, TypeError):
         print(f"Error converting {value} to {target_type}")
         return None
+    
+def to_numpy_array(value):
+    if isNoneType(value):
+        return value
+    return np.array([value])

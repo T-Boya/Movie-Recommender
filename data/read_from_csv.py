@@ -1,8 +1,9 @@
 import pandas as pd
 import os
 
-from classes import Movie, Actor, MovieDatabase
+from classes import Movie, MovieDatabase
 from parse_utils import convert_to_type, parse_actors
+import time
 
 # Get the current directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -42,10 +43,23 @@ for data_dict in data:
     )
     movieDatabase.add_movie(movie)
 
-# Print the first 5 movies in the database
-for movie in list(movieDatabase.movies.values())[:5]:
-    print(repr(movie))
+    total_movies = len(data)
+    current_movie_index = data.index(data_dict) + 1
+    proportion_added = current_movie_index / total_movies
 
-# Print the first 5 actors in the database
-for actor in list(movieDatabase.actors.values())[:5]:
-    print(repr(actor))
+# Print the first 5 movies in the database
+for movie in list(movieDatabase.get_movies())[:5]:
+    print(f"Movie: {movie.title}")
+    for attribute, vector in movie.attribute_vectors.items():
+        if vector is not None:
+            print(f"Attribute: {attribute}, Vector: {vector}, Value: {getattr(movie, attribute)}")
+    print("\n")
+
+print(list(movieDatabase.attribute_vectors.keys()))
+
+# # Print the first 5 actors in the database
+# for actor in list(movieDatabase.actors.values())[:5]:
+#     print(repr(actor))
+
+# IN PROGRESS:  Why is 'year' not normalized? Fix this
+# Then fix normalization of non 1-sized vectors. CUrrent implementation breaks other things? DO we also normalize these across movies?

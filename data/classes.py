@@ -1,7 +1,10 @@
 import hashlib
+import random
 
 import numpy as np
 import copy
+
+from parse_utils import to_numpy_array
 
 class MovieDatabase:
     """
@@ -35,10 +38,10 @@ class MovieDatabase:
         # Add the movie to the movies dictionary
         self.movies[movie.id] = movie
         # Update attribute vectors with the new movie's vectors
-        updated_fields = self.update_attribute_vectors(movie)
+        updated_fields, movies_to_normalize = self.update_attribute_vectors(movie)
         # Normalize vectors across all movies if there are updated fields
         if updated_fields:
-            self.normalize_vectors_across_movies(updated_fields, movie.id)
+            self.normalize_vectors_across_movies(updated_fields, movies_to_normalize, movie.id)
         # Add actors to the actors dictionary
         for actor_name in movie.actors:
             if actor_name not in self.actors:
@@ -61,6 +64,7 @@ class MovieDatabase:
         """
         vectors = movie.get_attribute_vectors()
         updated_fields = {}
+        movies_to_normalize = {movie.id}
         for key, vector in vectors.items():
             if isinstance(vector, np.ndarray) and vector.size == 1:
                 value = vector[0]
@@ -69,21 +73,21 @@ class MovieDatabase:
                     self.attribute_vectors[key] = {'min': value, 'max': value, 'movies': {movie.id}}
                     updated_fields[key] = {'min': value, 'max': value}
                 else:
-                    original_min = self.attribute_vectors[key]['min']
-                    original_max = self.attribute_vectors[key]['max']
-                    if value < original_min:
+                    original_min_max = self.attribute_vectors[key]
+                    if value < original_min_max['min']:
                         # Update the minimum value for the attribute
                         self.attribute_vectors[key]['min'] = value
-                        updated_fields[key] = {'min': original_min, 'max': original_max}
-                    if value > original_max:
+                        movies_to_normalize.update(self.attribute_vectors[key]['movies'])
+                    if value > original_min_max['max']:
                         # Update the maximum value for the attribute
                         self.attribute_vectors[key]['max'] = value
-                        updated_fields[key] = {'min': original_min, 'max': original_max}
+                        movies_to_normalize.update(self.attribute_vectors[key]['movies'])
+                    updated_fields[key] = {'min': original_min_max['min'], 'max': original_min_max['max']}
                     # Add the movie id to the set of movies for this attribute
                     self.attribute_vectors[key]['movies'].add(movie.id)
-        return updated_fields
+        return updated_fields, movies_to_normalize
 
-    def normalize_vectors_across_movies(self, updated_fields, new_movie_id):
+    def normalize_vectors_across_movies(self, updated_fields, movies_to_normalize, new_movie_id):
         """
         Normalize the attribute vectors across all movies.
 
@@ -101,20 +105,28 @@ class MovieDatabase:
             original_min_value = original_min_max['min']
             original_max_value = original_min_max['max']
             range_value = max_value - min_value
-            if range_value > 0:
-                for movie_id in min_max['movies']:
-                    movie = self.movies[movie_id]
-                    vectors = movie.get_attribute_vectors()
-                    if key in vectors and isinstance(vectors[key], np.ndarray) and vectors[key].size == 1:
+            for movie_id in movies_to_normalize:
+                movie = self.movies[movie_id]
+                vectors = movie.get_attribute_vectors()
+                if key in vectors and isinstance(vectors[key], np.ndarray) and vectors[key].size == 1:
+                    init_value = vectors[key][0]
+                    if range_value > 0:
                         if movie_id == new_movie_id:
-                            # Normalize only the new movie
+                            # Normalize the new movie
                             vectors[key] = (vectors[key] - min_value) / range_value
                         else:
                             # Scale already-normalized score up/down based on change to min/max
                             current_value = vectors[key] * (original_max_value - original_min_value) + original_min_value
                             vectors[key] = (current_value - min_value) / range_value
-                        # Update the movie's vector with the normalized value
-                        movie.update_vector(key, vectors[key])
+                    else:
+                        # If range_value is 0, set the normalized value to 0.5 to differentiate
+                        vectors[key] = np.array([0.5])
+                    # Update the movie's vector with the normalized value
+                    movie.update_vector(key, vectors[key])
+                    if key == 'year' and min_value < 2012 and movie.title == 'Prometheus':
+                        _start = init_value
+                        _end = vectors[key][0]
+                        pass
 
     def get_movies(self):
         """
@@ -164,24 +176,24 @@ class Movie:
         """Generate vector representations for each attribute."""
         #  TODO: all vectors need to be scaled to the same length or distance calculation will be skewed
         vectors = {
-            'title': self.vectorize(self.title),
-            'year': self.vectorize(self.year),
-            'genre': self.vectorize(self.genre),
-            'rating': self.vectorize(self.rating),
-            'director': self.vectorize(self.director),
-            'actors': [self.vectorize(actor) for actor in self.actors],
-            'plot': self.vectorize(self.plot),
-            'budget': self.vectorize(self.budget),
-            'box_office': self.vectorize(self.box_office),
-            'duration': self.vectorize(self.duration),
-            'country': self.vectorize(self.country),
-            'language': self.vectorize(self.language),
-            'awards': self.vectorize(self.awards),
-            'imdb_rating': self.vectorize(self.imdb_rating),
-            'imdb_votes': self.vectorize(self.imdb_votes),
+            # 'title': self.vectorize(self.title),
+            'year': to_numpy_array(self.year),
+            # 'genre': self.vectorize(self.genre),
+            'rating': None, # this should be R, PG-13, etc.
+            'director': None,
+            'actors': None,
+            # 'plot': self.vectorize(self.plot),
+            'budget': to_numpy_array(self.budget),
+            'box_office': to_numpy_array(self.box_office),
+            'duration': to_numpy_array(self.duration),
+            'country': None,
+            'language': None,
+            'awards': None,
+            'imdb_rating': to_numpy_array(self.imdb_rating),
+            'imdb_votes': None,
             # 'imdb_id' is not a useful vector for recommendation
         }
-        vectors = self.normalize_vectors(vectors) # TODO: move this to the MovieDatabase class
+        # vectors = self.normalize_vectors(vectors) # TODO: move this to the MovieDatabase class
         return vectors
 
     def vectorize(self, attribute):
