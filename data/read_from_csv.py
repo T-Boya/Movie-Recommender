@@ -43,13 +43,9 @@ for data_dict in data:
     movieDatabase.add_movie(movie)
 
 # Print the first 5 movies in the database
-for i, movie in enumerate(movieDatabase.movies):
-    if i == 5:
-        break
+for movie in list(movieDatabase.movies.values())[:5]:
     print(repr(movie))
 
 # Print the first 5 actors in the database
-for i, actor in enumerate(movieDatabase.actors):
-    if i == 5:
-        break
-    print(actor)
+for actor in list(movieDatabase.actors.values())[:5]:
+    print(repr(actor))
