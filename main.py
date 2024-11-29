@@ -1,6 +1,10 @@
 from data.read_from_csv import load_movie_data
 import numpy as np
 from collections import defaultdict
+from sentence_transformers import SentenceTransformer, SimilarityFunction, util
+
+model = SentenceTransformer('all-mpnet-base-v2')
+model.similarity_fn_name = SimilarityFunction.EUCLIDEAN
 
 movies, actors, metrics = load_movie_data()
 
@@ -12,8 +16,15 @@ for movie in list(movies.values())[:5]:
             print(f"Attribute: {attribute}, Vector: {vector}, Value: {movie.get_normalized_vector(attribute)}")
     print("\n")
 
+def calculate_distance(attribute,x,y):
+    match attribute:
+        case 'title':
+            dist = -model.similarity(x, y)[0][0].item()
+            return dist # cosine similarity
+        case _:
+            return np.linalg.norm(x - y) # euclidean distance
 
-def calculate_euclidean_distances(movie_id, movie_database):
+def calculate_distances(movie_id, movie_database):
     """
     Calculate the Euclidean distance from the given movie to all other movies in the database.
     
@@ -47,7 +58,7 @@ def calculate_euclidean_distances(movie_id, movie_database):
             if key in other_vectors:
                 # not all distances are created equal, have a vector of distances and weight distance by importance before summing
                 # importance is defined by attribute
-                distance += np.linalg.norm(target_vectors[key] - other_vectors[key])
+                distance += calculate_distance(key, target_vectors[key], other_vectors[key])
         
         distances[distance].append(other_movie.id)
     
@@ -56,7 +67,7 @@ def calculate_euclidean_distances(movie_id, movie_database):
 # Calculate the Euclidean distances from the first movie to all other movies
 movie_id = list(movies.keys())[0]
 print("Finding movies similar to movie:", movies[movie_id].title)
-distances = calculate_euclidean_distances(movie_id, movies)
+distances = calculate_distances(movie_id, movies)
 
 # Get the 5 movies with the smallest distance
 closest_movies = sorted(distances.items())[:5]

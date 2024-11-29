@@ -1,10 +1,13 @@
 import hashlib
-import random
+
+from sentence_transformers import SentenceTransformer, util
 
 import numpy as np
 import copy
 
 from data.parse_utils import to_numpy_array
+
+model = SentenceTransformer('all-mpnet-base-v2')
 
 class MovieMetrics:
     """
@@ -84,7 +87,7 @@ class Movie:
         """Generate vector representations for each attribute."""
         #  TODO: all vectors need to be scaled to the same length or distance calculation will be skewed
         vectors = {
-            # 'title': self.vectorize(self.title),
+            'title': model.encode(self.title),
             'year': to_numpy_array(self.year),
             # 'genre': self.vectorize(self.genre),
             'rating': None, # this should be R, PG-13, etc.
@@ -106,7 +109,9 @@ class Movie:
     
     def get_normalized_vector(self, key):
         """Return the normalized vector for a specific attribute."""
-        if key in self.attribute_vectors:
+        if key == 'title':
+            return self.attribute_vectors[key]
+        elif key in self.attribute_vectors:
             min_val = self.aggregated_metrics.attribute_vectors[key]['min']
             max_val = self.aggregated_metrics.attribute_vectors[key]['max']
             if max_val != min_val:
