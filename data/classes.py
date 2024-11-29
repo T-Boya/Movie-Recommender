@@ -7,8 +7,6 @@ import copy
 
 from data.parse_utils import to_numpy_array
 
-model = SentenceTransformer('all-mpnet-base-v2')
-
 class MovieMetrics:
     """
     A class to represent aggregated metrics across movies in the database.
@@ -87,13 +85,13 @@ class Movie:
         """Generate vector representations for each attribute."""
         #  TODO: all vectors need to be scaled to the same length or distance calculation will be skewed
         vectors = {
-            'title': model.encode(self.title),
+            'title': self.title,
             'year': to_numpy_array(self.year),
-            'genre': model.encode(self.genre),
+            'genre': self.genre,
             'rating': None, # this should be R, PG-13, etc.
             'director': None,
             'actors': None,
-            'plot':  model.encode(self.plot),
+            'plot':  self.plot,
             'budget': to_numpy_array(self.budget),
             'box_office': to_numpy_array(self.box_office),
             'duration': to_numpy_array(self.duration),
@@ -101,7 +99,7 @@ class Movie:
             'language': None,
             'awards': None,
             'imdb_rating': to_numpy_array(self.imdb_rating), # you don't want to fit to rating, you want to maximize it
-            'imdb_votes': None,
+            'imdb_votes': None, # imdb_rating should be log(imdb_votes) * imdb_rating, where each are separately normalized - want the product but not either individually
             # 'imdb_id' is not a useful vector for recommendation
         }
         # vectors = self.normalize_vectors(vectors) # TODO: move this to the MovieDatabase class
@@ -117,8 +115,8 @@ class Movie:
             if max_val != min_val:
                 return (self.attribute_vectors[key] - min_val) / (max_val - min_val)
             else:
-                return to_numpy_array(0.5)
-        return None
+                return 0.5 # this value should have no effect on output
+        raise Exception(f"Attribute '{key}' not found in the attribute vectors.")
 
 
     def vectorize(self, attribute):
