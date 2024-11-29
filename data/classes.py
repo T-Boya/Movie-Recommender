@@ -89,11 +89,11 @@ class Movie:
         vectors = {
             'title': model.encode(self.title),
             'year': to_numpy_array(self.year),
-            # 'genre': self.vectorize(self.genre),
+            'genre': model.encode(self.genre),
             'rating': None, # this should be R, PG-13, etc.
             'director': None,
             'actors': None,
-            # 'plot': self.vectorize(self.plot),
+            'plot':  model.encode(self.plot),
             'budget': to_numpy_array(self.budget),
             'box_office': to_numpy_array(self.box_office),
             'duration': to_numpy_array(self.duration),
@@ -109,7 +109,7 @@ class Movie:
     
     def get_normalized_vector(self, key):
         """Return the normalized vector for a specific attribute."""
-        if key == 'title':
+        if key in ['title', 'genre', 'plot']:
             return self.attribute_vectors[key]
         elif key in self.attribute_vectors:
             min_val = self.aggregated_metrics.attribute_vectors[key]['min']

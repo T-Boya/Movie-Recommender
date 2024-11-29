@@ -9,7 +9,7 @@ model.similarity_fn_name = SimilarityFunction.EUCLIDEAN
 movies, actors, metrics = load_movie_data()
 
 # Print the first 5 movies in the database
-for movie in list(movies.values())[:5]:
+for movie in list(movies.values())[:1]:
     print(f"Movie: {movie.title}")
     for attribute, vector in movie.attribute_vectors.items():
         if vector is not None:
@@ -19,6 +19,12 @@ for movie in list(movies.values())[:5]:
 def calculate_distance(attribute,x,y):
     match attribute:
         case 'title':
+            dist = -model.similarity(x, y)[0][0].item()
+            return dist * 0.1 # cosine similarity
+        case 'genre':
+            dist = -model.similarity(x, y)[0][0].item()
+            return dist # cosine similarity
+        case 'plot':
             dist = -model.similarity(x, y)[0][0].item()
             return dist # cosine similarity
         case _:
