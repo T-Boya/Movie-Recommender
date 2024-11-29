@@ -1,9 +1,8 @@
 import pandas as pd
 import os
 
-from classes import Movie, MovieDatabase
+from classes import Actor, Movie, MovieMetrics
 from parse_utils import convert_to_type, parse_actors
-import time
 
 # Get the current directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +17,9 @@ data = pd.read_csv(file_path)
 data = data.to_dict(orient='records')
 
 # Create Movie instances
-movieDatabase = MovieDatabase()
+movies = {}
+actors = {}
+metrics = MovieMetrics()
 for data_dict in data:
 
     actors_list = parse_actors(data_dict['Actors'])
@@ -39,23 +40,28 @@ for data_dict in data:
         awards=None,  # No awards information in the data_dict
         imdb_rating=convert_to_type(data_dict['Rating'], float),
         imdb_votes=convert_to_type(data_dict['Votes'], int),
-        imdb_id=None  # No IMDb ID information in the data_dict
+        imdb_id=None,  # No IMDb ID information in the data_dict
+        aggregated_metrics = metrics,
     )
-    movieDatabase.add_movie(movie)
 
-    total_movies = len(data)
-    current_movie_index = data.index(data_dict) + 1
-    proportion_added = current_movie_index / total_movies
+    movies[movie.id] = movie
+    for actor_name in actors_list:
+        if actor_name in actors:
+            actors[actor_name].add_movie(movie.id)
+        else:
+            actor = Actor(name=actor_name)
+            actor.add_movie(movie.id)
+            actors[actor_name] = actor
+
+    metrics.update_attribute_vectors(movie)
 
 # Print the first 5 movies in the database
-for movie in list(movieDatabase.get_movies())[:5]:
+for movie in list(movies.values())[:5]:
     print(f"Movie: {movie.title}")
     for attribute, vector in movie.attribute_vectors.items():
         if vector is not None:
-            print(f"Attribute: {attribute}, Vector: {vector}, Value: {getattr(movie, attribute)}")
+            print(f"Attribute: {attribute}, Vector: {vector}, Value: {movie.get_normalized_vector(attribute)}")
     print("\n")
-
-print(list(movieDatabase.attribute_vectors.keys()))
 
 # # Print the first 5 actors in the database
 # for actor in list(movieDatabase.actors.values())[:5]:
