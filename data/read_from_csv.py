@@ -16,7 +16,7 @@ def load_movie_data():
 
     # Create an array of dictionaries where each element represents a row in the dataset
     data = data.to_dict(orient='records')
-    data = data[:50]  # Limit the number of movies to 10 for faster processing
+    data = data[:10]  # Limit the number of movies to 10 for faster processing
 
     # Create Movie instances
     movies = {}
