@@ -30,8 +30,6 @@ def calculate_vector_magnitude(vector):
 def calculate_distance(attribute,x,y):
     match attribute:
         case 'title':
-            x = model.encode(x)
-            y = model.encode(y)
             dist = -model.similarity(x, y)[0][0].item()
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist * 0.1 # cosine similarity
@@ -44,11 +42,20 @@ def calculate_distance(attribute,x,y):
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist
         case 'plot':
-            x = model.encode(x)
-            y = model.encode(y)
             dist = -model.similarity(x, y)[0][0].item()
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist # cosine similarity
+        case 'actors':
+            dist = []
+            for key in x:
+                if key in y:
+                    np.append(dist, calculate_distance(key, x[key], y[key]))
+                else:
+                    np.append(dist, 0.0)
+            # TODO: do we normalize these two before summing?
+            dist = calculate_vector_magnitude(dist) # euclidean distance
+            dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
+            return dist
         case _:
             dist = calculate_vector_magnitude(x - y) # euclidean distance
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
@@ -72,16 +79,20 @@ def calculate_distances(movie_id, movie_database):
     if not target_movie:
         raise ValueError(f"Movie with ID {movie_id} not found in the database.")
     
-    # Fetch all keys that don't have None as a value
-    valid_keys = [key for key, value in target_movie.attribute_vectors.items() if value is not None]
+    # Fetch all keys
+    valid_keys = [key for key, value in target_movie.attribute_vectors.items() if \
+                  (value is not None and key in target_movie.PRECALCULATED_VECTORS) or \
+                    (value is None and key in target_movie.ON_THE_FLY_VECTORS)]
 
     # Get normalized vectors for each valid key
+    target_movie.calculate_on_the_fly_vectors(movie_database, actors)
     target_vectors = {key: target_movie.get_normalized_vector(key) for key in valid_keys}
     
     for other_movie in movie_database.values():
         if other_movie.id == movie_id:
             continue
         
+        other_movie.calculate_on_the_fly_vectors(movie_database, actors)
         other_vectors = {key: other_movie.get_normalized_vector(key) for key in valid_keys if other_movie.attribute_vectors[key] is not None}
         distance = []
         

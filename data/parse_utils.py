@@ -11,7 +11,7 @@ def parse_actors(actors: str) -> list:
 def convert_to_type(value, target_type):
     try:
         if isNoneType(value):
-            return value
+            return None
         return target_type(value)
     except (ValueError, TypeError):
         print(f"Error converting {value} to {target_type}")
