@@ -9,7 +9,7 @@ import copy
 from torch import Tensor
 
 from data.class_helpers import calculate_average_movie
-from data.parse_utils import isNoneType, to_numpy_array
+from data.parse_utils import isNoneType
 
 model = SentenceTransformer('all-mpnet-base-v2')
 
@@ -38,9 +38,8 @@ class MovieMetrics:
             The movie object whose vectors are to be used in the updated.
         """
         vectors = movie.get_attribute_vectors()
-        for key, vector in vectors.items():
-            if isinstance(vector, np.ndarray) and vector.size == 1:
-                value = vector[0]
+        for key, value in vectors.items():
+            if isinstance(value, float):
                 if key not in self.attribute_vectors:
                     # Initialize the attribute vector if it does not exist
                     self.attribute_vectors[key] = {'min': value, 'max': value, 'movies': {movie.id}}
@@ -56,19 +55,19 @@ class MovieMetrics:
 class Movie:
     ATTRIBUTE_VECTOR_TYPES = {
         'title': (Union[List[Tensor], np.ndarray, Tensor], type(None)),
-        'year': (np.ndarray, type(None)),
+        'year': (float, type(None)),
         # 'genre': (str, type(None)),
         'rating': (type(None)),
         'director': (type(None)),
         'actors': (Any, type(None)), # TODO: strengthen this type
         'plot': (Union[List[Tensor], np.ndarray, Tensor], type(None)),
-        'budget': (np.ndarray, type(None)),
-        'box_office': (np.ndarray, type(None)),
-        'duration': (np.ndarray, type(None)),
+        'budget': (float, type(None)),
+        'box_office': (float, type(None)),
+        'duration': (float, type(None)),
         'country': (type(None)),
         'language': (type(None)),
         'awards': (type(None)),
-        'imdb_rating': (np.ndarray, type(None)),
+        'imdb_rating': (float, type(None)),
         'imdb_votes': (type(None)),
         # 'imdb_id': (type(None)),
     }
@@ -186,19 +185,19 @@ class Movie:
         #  TODO: all vectors need to be scaled to the same length or distance calculation will be skewed
         vectors = {
             'title':  model.encode(self.title),
-            'year': to_numpy_array(self.year),
+            'year': self.year,
             # 'genre': self.genre, # to reinstate this you need to update the get_average_movie method to handle strings, or convert from a string to a vector
             'rating': None, # this should be R, PG-13, etc.
             'director': None,
             'actors': None,
             'plot':   model.encode(self.plot),
-            'budget': to_numpy_array(self.budget),
-            'box_office': to_numpy_array(self.box_office),
-            'duration': to_numpy_array(self.duration),
+            'budget': self.budget,
+            'box_office': self.box_office,
+            'duration': self.duration,
             'country': None,
             'language': None,
             'awards': None,
-            'imdb_rating': to_numpy_array(self.imdb_rating), # you don't want to fit to rating, you want to maximize it
+            'imdb_rating': self.imdb_rating, # you don't want to fit to rating, you want to maximize it
             'imdb_votes': None, # imdb_rating should be log(imdb_votes) * imdb_rating, where each are separately normalized - want the product but not either individually
             # 'imdb_id' is not a useful vector for recommendation
         }

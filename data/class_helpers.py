@@ -9,7 +9,7 @@ def calculate_average_movie(movie_vectors):
 
     # Compute the average for each column
     for key in keys:
-        column = [vector[key] for vector in movie_vectors]
+        column = [vector[key] if vector[key] is not None else np.nan for vector in movie_vectors]
         if isinstance(column[0], (int, float, np.float64)):
             average = np.nanmean(column)
             output_vector.append(average)

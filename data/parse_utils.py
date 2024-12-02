@@ -16,8 +16,3 @@ def convert_to_type(value, target_type):
     except (ValueError, TypeError):
         print(f"Error converting {value} to {target_type}")
         return None
-    
-def to_numpy_array(value):
-    if isNoneType(value):
-        return value
-    return np.array([value])

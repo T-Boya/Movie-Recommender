@@ -16,7 +16,7 @@ def load_movie_data():
 
     # Create an array of dictionaries where each element represents a row in the dataset
     data = data.to_dict(orient='records')
-    data = data[:10]  # Limit the number of movies to 10 for faster processing
+    data = data[:100]  # Limit the number of movies to 10 for faster processing
 
     # Create Movie instances
     movies = {}
@@ -28,20 +28,20 @@ def load_movie_data():
 
         movie = Movie(
             title=data_dict['Title'],
-            year=convert_to_type(data_dict['Year'], int),
+            year=convert_to_type(data_dict['Year'], float),
             genre=data_dict['Genre'],
             rating=None, # No rating information in the data_dict
             director=data_dict['Director'],
             actors=actors_list,
             plot=data_dict['Description'],
             budget=None,  # No budget information in the data_dict
-            box_office=convert_to_type(data_dict['Revenue (Millions)'], int),
+            box_office=convert_to_type(data_dict['Revenue (Millions)'], float),
             duration=convert_to_type(data_dict['Runtime (Minutes)'], float),
             country=None,  # No country information in the data_dict
             language=None,  # No language information in the data_dict
             awards=None,  # No awards information in the data_dict
             imdb_rating=convert_to_type(data_dict['Rating'], float),
-            imdb_votes=convert_to_type(data_dict['Votes'], int),
+            imdb_votes=convert_to_type(data_dict['Votes'], float),
             imdb_id=None,  # No IMDb ID information in the data_dict
             aggregated_metrics = metrics,
         )
