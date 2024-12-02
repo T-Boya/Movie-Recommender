@@ -53,10 +53,8 @@ def calculate_distance(attribute,x,y):
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist * 0.1 # cosine similarity
         case 'genre':
-            x_set = set(map(str.strip, x.split(',')))
-            y_set = set(map(str.strip, y.split(',')))
-            all_keys = x_set.union(y_set)
-            all_dict = {key: 0 if key in x_set and key in y_set else 1 for key in all_keys}
+            all_keys = x.union(y)
+            all_dict = {key: 0 if key in x and key in y else 1 for key in all_keys}
             dist = calculate_vector_magnitude(list(all_dict.values())) # jaccard distance
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist
@@ -149,7 +147,7 @@ def calculate_distances(movie_id, movie_database):
 movie_id = list(movies.keys())[0]
 distances = calculate_distances(movie_id, movies)
 
-movie_display_count = 5
+movie_display_count = 10
 print(f"Found {movie_display_count} movies similar to movie: {movies[movie_id].title}")
 # Get the 5 movies with the smallest distance
 closest_movies = sorted(distances.items(), key=lambda item: item[1])[:movie_display_count]

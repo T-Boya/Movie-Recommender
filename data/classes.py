@@ -56,7 +56,7 @@ class Movie:
     ATTRIBUTE_VECTOR_TYPES = {
         'title': (Union[List[Tensor], np.ndarray, Tensor], type(None)),
         'year': (float, type(None)),
-        # 'genre': (str, type(None)),
+        'genre': (set, type(None)),
         'rating': (type(None)),
         'director': (dict, type(None)),
         'actors': (dict, type(None)), # TODO: strengthen this type
@@ -86,7 +86,7 @@ class Movie:
         'imdb_rating'
         'imdb_votes',
     ]
-    ON_THE_FLY_VECTORS = ['actors', 'director']
+    ON_THE_FLY_VECTORS = ['actors', 'director', 'genre']
         
     def __init__(self, title, year, genre, rating, director, actors, plot, budget, 
                  box_office, duration, country, language, awards, 
@@ -180,7 +180,7 @@ class Movie:
         vectors = {
             'title':  model.encode(self.title),
             'year': self.year,
-            # 'genre': self.genre, # to reinstate this you need to update the get_average_movie method to handle strings, or convert from a string to a vector
+            'genre': None, # to reinstate this you need to update the get_average_movie method to handle strings, or convert from a string to a vector
             'rating': None, # this should be R, PG-13, etc.
             'director': None,
             'actors': None,
@@ -203,6 +203,8 @@ class Movie:
         """Calculate vectors on the fly for attributes that are not precalculated."""
         self.calculate_actor_vectors(movies, actors)
         self.calculate_director_vector(movies, actors)
+        self.calculate_genre() # This needs to be last or it will break other calculations
+
         self.validate_on_the_fly_vectors()
         self.validate_attribute_vectors()
 
@@ -227,6 +229,9 @@ class Movie:
         """Calculate the average movie vector for the director."""
         director_movies = self.get_all_movie_vectors_for_actor(movies, actors, self.director)
         self.attribute_vectors['director'] = calculate_average_movie(director_movies)
+
+    def calculate_genre(self):
+        self.attribute_vectors['genre'] = set([x.strip() for x in self.genre.split(',')])
     
     # TODO: is this normalization necessary? We are already normalizing the vectors in the distance calculation
     def get_normalized_vector(self, key):
