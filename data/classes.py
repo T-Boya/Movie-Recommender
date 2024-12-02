@@ -206,27 +206,26 @@ class Movie:
         self.validate_on_the_fly_vectors()
         self.validate_attribute_vectors()
 
+    def get_all_movie_vectors_for_actor(self, movies, actors, actor):
+        actor_movies = []
+        for movie in actors[actor].movies:
+                vector = copy.deepcopy(movies[movie].attribute_vectors)
+                for key in self.ON_THE_FLY_VECTORS:
+                    vector.pop(key, None)
+                actor_movies.append(vector)
+        return actor_movies
+
     def calculate_actor_vectors(self, movies, actors):
         """Return the average movie vector for each actor."""
         movie_vectors = []
         for actor in self.actors:
-            actor_movies = []
-            for movie in actors[actor].movies:
-                    vector = copy.deepcopy(movies[movie].attribute_vectors)
-                    for key in self.ON_THE_FLY_VECTORS:
-                        vector.pop(key, None)
-                    actor_movies.append(vector)
+            actor_movies = self.get_all_movie_vectors_for_actor(movies, actors, actor)
             movie_vectors.append(calculate_average_movie(actor_movies))
         self.attribute_vectors['actors'] = calculate_average_movie(movie_vectors)
 
     def calculate_director_vector(self, movies, actors):
         """Calculate the average movie vector for the director."""
-        director_movies = []
-        for movie in actors[self.director].movies:
-            vector = copy.deepcopy(movies[movie].attribute_vectors)
-            for key in self.ON_THE_FLY_VECTORS:
-                vector.pop(key, None)
-            director_movies.append(vector)
+        director_movies = self.get_all_movie_vectors_for_actor(movies, actors, self.director)
         self.attribute_vectors['director'] = calculate_average_movie(director_movies)
     
     # TODO: is this normalization necessary? We are already normalizing the vectors in the distance calculation
