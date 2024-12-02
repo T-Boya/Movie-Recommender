@@ -15,6 +15,25 @@ movies, actors, metrics = load_movie_data()
 #             print(f"Attribute: {attribute}, Vector: {vector}, Value: {movie.get_normalized_vector(attribute)}")
 #     print("\n")
 
+WEIGHTS = {
+    'title': 1,
+    'year': 1,
+    'genre': 1,
+    'rating': 1,
+    'director': 1,
+    'actors': 1,
+    'plot': 1,
+    'budget': 1,
+    'box_office': 1,
+    'duration': 1,
+    'country': 1,
+    'language': 1,
+    'awards': 1,
+    'imdb_rating': 1,
+    'imdb_votes': 1,
+    # 'imdb_id': 1,
+}
+
 def calculate_vector_magnitude(vector):
     """
     Calculate the magnitude of a vector.
@@ -26,6 +45,53 @@ def calculate_vector_magnitude(vector):
     float: The magnitude of the vector.
     """
     return np.linalg.norm(vector)
+
+def get_filtered_weights(vector, weights):
+    """
+    Filter the weights dictionary to include only keys that are present in the vector dictionary.
+    Throws an exception if there is a key in the vector that is not present in the weights.
+    
+    Parameters:
+    weights (dict): The dictionary of weights.
+    vector (dict): The dictionary of vectors.
+    
+    Returns:
+    dict: A filtered dictionary of weights.
+    
+    Raises:
+    KeyError: If a key in the vector is not present in the weights.
+    """
+    for key in vector:
+        if key not in weights:
+            raise KeyError(f"Key '{key}' found in vector but not in weights.")
+    
+    return {key: weights[key] for key in weights if key in vector}
+
+def calculate_weighted_vector_magnitude(vector, weights):
+    """
+    Calculate the weighted magnitude of a vector.
+    
+    Parameters:
+    vector (np.array): The vector for which to calculate the magnitude.
+    weights (np.array): The weights to apply to each component of the vector.
+    
+    Returns:
+    float: The weighted magnitude of the vector.
+    """
+    # Filter the weights to include only keys present in the vector
+    filtered_weights = get_filtered_weights(vector, weights)
+
+    # Ensure the lengths of the filtered weights and vector are the same
+    if len(vector) != len(filtered_weights):
+        raise ValueError("The length of the vector and weights must be the same.")
+    
+    # Convert the vector and weights to numpy arrays
+    vector_values = np.array([vector[key] for key in filtered_weights.keys()])
+    weight_values = np.array([filtered_weights[key] for key in filtered_weights.keys()])
+    
+    # Calculate the weighted vector magnitude
+    weighted_vector = weight_values * (vector_values ** 2)
+    return np.sqrt(np.sum(weighted_vector))
 
 def normalize_matrix_columns(matrix):
     """
@@ -63,25 +129,25 @@ def calculate_distance(attribute,x,y):
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist # cosine similarity
         case 'actors':
-            dist = []
+            dist = {}
             for key in x:
                 if key in y:
-                    np.append(dist, calculate_distance(key, x[key], y[key]))
+                    dist[key] = calculate_distance(key, x[key], y[key])
                 else:
-                    np.append(dist, 0.0)
+                    dist[key] = 0.0
             # TODO: do we normalize these two before summing?
-            dist = calculate_vector_magnitude(dist) # euclidean distance
+            dist = calculate_weighted_vector_magnitude(dist, WEIGHTS) # euclidean distance
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist
         case 'director':
-            dist = []
+            dist = {}
             for key in x:
                 if key in y:
-                    np.append(dist, calculate_distance(key, x[key], y[key]))
+                    dist[key] = calculate_distance(key, x[key], y[key])
                 else:
-                    np.append(dist, 0.0)
+                    dist[key] = 0.0
             # TODO: do we normalize these two before summing?
-            dist = calculate_vector_magnitude(dist) # euclidean distance
+            dist = calculate_weighted_vector_magnitude(dist, WEIGHTS) # euclidean distance
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist
         case _:
@@ -141,7 +207,7 @@ def calculate_distances(movie_id, movie_database):
     distances = normalize_matrix_columns(distances)  # Normalize distances matrix by column such that min and max are zero and one
 
     # use distance_map to map distances back to movie ids
-    return {distance_map[idx]: calculate_vector_magnitude(distance) for idx, distance in enumerate(distances)}
+    return {distance_map[idx]: calculate_weighted_vector_magnitude(dict(zip(list(target_vectors.keys()),distance)), WEIGHTS) for idx, distance in enumerate(distances)}
 
 # Calculate the Euclidean distances from the first movie to all other movies
 movie_id = list(movies.keys())[0]
