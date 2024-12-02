@@ -27,6 +27,25 @@ def calculate_vector_magnitude(vector):
     """
     return np.linalg.norm(vector)
 
+def normalize_matrix_columns(matrix):
+    """
+    Normalize the columns of a matrix such that the minimum value in each column is 0 and the maximum value is 1.
+    
+    Parameters:
+    matrix (np.ndarray): The input matrix to normalize.
+    
+    Returns:
+    np.ndarray: The normalized matrix.
+    """
+    if matrix.size > 0:
+        min_values = np.min(matrix, axis=0)
+        max_values = np.max(matrix, axis=0)
+        range_values = max_values - min_values
+        range_values[range_values == 0] = 1  # Avoid division by zero
+        normalized_matrix = (matrix - min_values) / range_values
+        return normalized_matrix
+    return matrix
+
 def calculate_distance(attribute,x,y):
     match attribute:
         case 'title':
@@ -46,6 +65,17 @@ def calculate_distance(attribute,x,y):
             dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
             return dist # cosine similarity
         case 'actors':
+            dist = []
+            for key in x:
+                if key in y:
+                    np.append(dist, calculate_distance(key, x[key], y[key]))
+                else:
+                    np.append(dist, 0.0)
+            # TODO: do we normalize these two before summing?
+            dist = calculate_vector_magnitude(dist) # euclidean distance
+            dist = np.nan_to_num(dist, nan=0.0)  # Replace NaN with 0
+            return dist
+        case 'director':
             dist = []
             for key in x:
                 if key in y:
@@ -109,14 +139,8 @@ def calculate_distances(movie_id, movie_database):
         distance_map[len(distances) - 1] = other_movie.id
         
     distances = np.array(distances)  # Convert distances to a NumPy array
-    # Normalize distances matrix by column such that min and max are zero and one
-    if distances.size > 0:
-        min_distances = np.min(distances, axis=0)
-        max_distances = np.max(distances, axis=0)
-        range_distances = max_distances - min_distances
-        range_distances[range_distances == 0] = 1  # Avoid division by zero
-        normalized_distances = (distances - min_distances) / range_distances
-        distances = normalized_distances
+
+    distances = normalize_matrix_columns(distances)  # Normalize distances matrix by column such that min and max are zero and one
 
     # use distance_map to map distances back to movie ids
     return {distance_map[idx]: calculate_vector_magnitude(distance) for idx, distance in enumerate(distances)}

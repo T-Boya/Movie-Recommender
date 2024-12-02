@@ -58,8 +58,8 @@ class Movie:
         'year': (float, type(None)),
         # 'genre': (str, type(None)),
         'rating': (type(None)),
-        'director': (type(None)),
-        'actors': (Any, type(None)), # TODO: strengthen this type
+        'director': (dict, type(None)),
+        'actors': (dict, type(None)), # TODO: strengthen this type
         'plot': (Union[List[Tensor], np.ndarray, Tensor], type(None)),
         'budget': (float, type(None)),
         'box_office': (float, type(None)),
@@ -76,7 +76,6 @@ class Movie:
         'title',
         'year',
         'rating',
-        'director',
         'plot',
         'budget',
         'box_office',
@@ -87,7 +86,7 @@ class Movie:
         'imdb_rating'
         'imdb_votes',
     ]
-    ON_THE_FLY_VECTORS = ['actors']
+    ON_THE_FLY_VECTORS = ['actors', 'director']
         
     def __init__(self, title, year, genre, rating, director, actors, plot, budget, 
                  box_office, duration, country, language, awards, 
@@ -119,11 +118,6 @@ class Movie:
         """Validate that on-the-fly vectors are calculated for all attributes that require them."""
         if not all(self.attribute_vectors[key] is not None for key in self.ON_THE_FLY_VECTORS):
             raise ValueError("On-the-fly vectors not calculated for all attributes.")
-
-    def calculate_on_the_fly_vectors(self, movies, actors):
-        """Calculate vectors on the fly for attributes that are not precalculated."""
-        self.get_actor_vectors(movies, actors)
-        self.validate_on_the_fly_vectors()
 
     def validate_precalculated_and_on_the_fly_vectors_lists(self):
         """Validate that precalculated and on-the-fly vectors lists do not overlap and their union is equivalent to attribute_vectors."""
@@ -205,23 +199,40 @@ class Movie:
         self.validate_attribute_vectors()
         # vectors = self.normalize_vectors(vectors) # TODO: move this to the MovieDatabase class
     
-    def get_actor_vectors(self, movies, actors):
+    def calculate_on_the_fly_vectors(self, movies, actors):
+        """Calculate vectors on the fly for attributes that are not precalculated."""
+        self.calculate_actor_vectors(movies, actors)
+        self.calculate_director_vector(movies, actors)
+        self.validate_on_the_fly_vectors()
+        self.validate_attribute_vectors()
+
+    def calculate_actor_vectors(self, movies, actors):
         """Return the average movie vector for each actor."""
         movie_vectors = []
         for actor in self.actors:
             actor_movies = []
             for movie in actors[actor].movies:
-                    vector = movies[movie].attribute_vectors
-                    vector.pop('actors', None)
+                    vector = copy.deepcopy(movies[movie].attribute_vectors)
+                    for key in self.ON_THE_FLY_VECTORS:
+                        vector.pop(key, None)
                     actor_movies.append(vector)
             movie_vectors.append(calculate_average_movie(actor_movies))
         self.attribute_vectors['actors'] = calculate_average_movie(movie_vectors)
-        self.validate_attribute_vectors()
+
+    def calculate_director_vector(self, movies, actors):
+        """Calculate the average movie vector for the director."""
+        director_movies = []
+        for movie in actors[self.director].movies:
+            vector = copy.deepcopy(movies[movie].attribute_vectors)
+            for key in self.ON_THE_FLY_VECTORS:
+                vector.pop(key, None)
+            director_movies.append(vector)
+        self.attribute_vectors['director'] = calculate_average_movie(director_movies)
     
     # TODO: is this normalization necessary? We are already normalizing the vectors in the distance calculation
     def get_normalized_vector(self, key):
         """Return the normalized vector for a specific attribute."""
-        if key in ['title', 'genre', 'plot', 'actors']:
+        if key in ['title', 'genre', 'plot'] + self.ON_THE_FLY_VECTORS:
             return self.attribute_vectors[key]
         elif key in self.attribute_vectors:
             if isNoneType(self.attribute_vectors[key]):

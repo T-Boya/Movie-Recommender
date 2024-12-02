@@ -47,6 +47,7 @@ def load_movie_data():
         )
 
         movies[movie.id] = movie
+        actors_list.append(data_dict['Director'])
         for actor_name in actors_list:
             if actor_name in actors:
                 actors[actor_name].add_movie(movie.id)
